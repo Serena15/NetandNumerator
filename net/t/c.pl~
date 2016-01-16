@@ -1,0 +1,26 @@
+use 5.010;
+use warnings;
+use strict;
+use DDP;
+#use Calc;
+use Sfera::TCP::Calc::Client;
+use Test::More tests => 1;
+use Test::TCP;
+use Sfera::TCP::Calc::Server;
+
+
+use IO::Socket::INET;
+
+#my $socket = Sfera::TCP::Calc::Client::set_connect(1, 'localhost', 8081);
+
+#my $res = Sfera::TCP::Calc::Client::do_request(1, $socket, 1,  "2 + 2 * 2");
+#p $res;
+#$res = Sfera::TCP::Calc::Client::do_request(1, $socket, 1,  "2 + 2 * 3");
+my @servers;
+push @servers, Sfera::TCP::Calc::Client->set_connect('127.0.0.1', $server->port) for 1..10;
+#p @servers;
+is(scalar(grep {eval {Sfera::TCP::Calc::Client->do_request($_, 1, '( 1 + 2 ) * 1'); 1}} @servers), 5, 'Process count');
+
+#p $res;
+    
+#close($socket);
