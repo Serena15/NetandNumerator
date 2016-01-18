@@ -22,7 +22,10 @@ $SIG{USR1} = \&print_stats;
 
 $SIG{USR2} = sub { $requests_count++; };
 
-$SIG{INT} = sub { $terminate = 1; };
+$SIG{INT} = sub { $terminate = 1; 
+print "This is stopped \n";
+die "Close all clients \n";
+};
 
 END {
     while ($children_count) {
@@ -57,18 +60,17 @@ sub start_server {
         Listen => 5,
         );
 
-
     my $parent_pid = $$;
 
-    while( !$terminate ) {
-        say "loop";
-        my $client = $server->accept();
-
+    while(!$terminate) {
+        say "loop";        
+	my $client = $server->accept();
+	#say "$terminate";	
         next unless defined $client;
 
         say "Childcount $children_count";
 
-        if($children_count > $max_children_count) {
+        if($children_count >= $max_children_count) {
             close($client);
             next;
         };
@@ -103,13 +105,13 @@ sub start_server {
 
                 my $resp_message = Sfera::TCP::Calc::pack_message(1, $result);
                 my $resp_header = Sfera::TCP::Calc::pack_header(1, $type, length($resp_message));
-                warn("Server send_header");
+                warn("Server send_header and 3message");
                 
-                my $bytes_sent = $client->syswrite($resp_header);
+                my $bytes_sent = $client->syswrite($resp_header.$resp_message);
                 return unless defined $bytes_sent;
-                $bytes_sent = $client->syswrite($resp_message);
-                return unless defined $bytes_sent;
-                warn("Server send_message");
+               # $bytes_sent = $client->syswrite($resp_message);
+               # return unless defined $bytes_sent;
+              #  warn("Server send_message");
 
                 kill USR2 => $parent_pid;
             }
@@ -117,6 +119,8 @@ sub start_server {
             exit(1);
         } else { die "Can't fork: $!"; }
     }
+	#close($server);
+	#die "\n Out here!\n";
 }
 
 sub read_data {
@@ -139,4 +143,5 @@ sub read_data {
 
 
 1;
+
 
