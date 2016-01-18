@@ -21,7 +21,7 @@ sub set_connect {
             Type => SOCK_STREAM,
             );
         die "Cannot connect to the server $!\n" unless $socket;
-    $socket->autoflush();
+    $socket->autoflush(1);
 	return $socket;
 }
 
