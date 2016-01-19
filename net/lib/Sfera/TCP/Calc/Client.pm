@@ -21,7 +21,7 @@ sub set_connect {
             Type => SOCK_STREAM,
             );
         die "Cannot connect to the server $!\n" unless $socket;
-    $socket->autoflush(1);
+    	$socket->autoflush(1);
 	return $socket;
 }
 
@@ -36,22 +36,25 @@ sub do_request {
         say $req_header_packed, length($req_header_packed);
 
         my $bytes_sent = syswrite($server, $req_header_packed.$req_message_packed);
-        warn "Client send_all ", $bytes_sent, $server->connected();
-
-        return unless defined $bytes_sent;
-           # $bytes_sent = syswrite($server, $req_message_packed);
-           # warn "client send 2";
-           # return unless defined $bytes_sent;
+	return unless defined $bytes_sent;
+	warn "Client send_all ", $bytes_sent, $server->connected();
+	if($bytes_sent != length($req_message_packed) + length($req_header_packed)) {
+		die "Can't write message from client\n";
+	}        
         my $resp_header_packed, my $resp_message_packed;
         my $bytes_read = sysread($server, $resp_header_packed, 3);
-
-        warn "Client read_header ",  $bytes_read;
-        return unless defined $bytes_read;
+	return unless defined $bytes_read;
+	warn "Client read_header ",  $bytes_read;
+	if($bytes_read != 3) {
+		die "Can't read message to client\n";
+	}        
         my ($resp_type, $size) = Sfera::TCP::Calc->unpack_header($resp_header_packed);
         $bytes_read = sysread($server, $resp_message_packed, $size);
-        warn "Client read_message ";
+        warn "Client read_message ", $bytes_read;	
         return unless defined $bytes_read;
-
+	if($bytes_read != $size) {
+		die "Can't read message to client\n";
+	}    
         return Sfera::TCP::Calc->unpack_message($resp_message_packed);
 }
 
