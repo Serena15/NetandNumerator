@@ -22,9 +22,10 @@ $SIG{USR1} = \&print_stats;
 
 $SIG{USR2} = sub { $requests_count++; };
 
-$SIG{INT} = sub { $terminate = 1; 
-print "This is stopped \n";
-die "Close all clients \n";
+$SIG{INT} = sub { 
+	$terminate = 1; 
+	print "This is stopped \n";
+	die "Close all clients \n";
 };
 
 END {
