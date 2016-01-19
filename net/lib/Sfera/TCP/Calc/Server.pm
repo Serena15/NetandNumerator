@@ -65,6 +65,9 @@ sub start_server {
     while(!$terminate) {
         say "loop";        
 	my $client = $server->accept();
+	if(!$client) {
+		next;
+	}
 	#say "$terminate";	
         next unless defined $client;
 
@@ -88,7 +91,6 @@ sub start_server {
             my ($err, $host, $service)= getnameinfo($other);
             print "Client $host:$service $/";
             $client->autoflush(1);
-            my $message;
             while(1) {
                 my $req_header = read_data($client, 3);
                 last unless defined $req_header;
@@ -101,26 +103,24 @@ sub start_server {
                 my $expr = Sfera::TCP::Calc::unpack_message(1, $req_message);
 
                 my $result = Sfera::TCP::Calc::request($type, $expr);
-		#print "Myresult\n",$result;
 
                 my $resp_message = Sfera::TCP::Calc::pack_message(1, $result);
                 my $resp_header = Sfera::TCP::Calc::pack_header(1, $type, length($resp_message));
-                warn("Server send_header and 3message");
+                warn("Server send_header and message");
                 
                 my $bytes_sent = $client->syswrite($resp_header.$resp_message);
                 return unless defined $bytes_sent;
-               # $bytes_sent = $client->syswrite($resp_message);
-               # return unless defined $bytes_sent;
-              #  warn("Server send_message");
+		if($bytes_sent != length($resp_header) + length($resp_message)) {
+			die "Can't write from server\n";
+		}
 
                 kill USR2 => $parent_pid;
             }
             close ($client);
+	    warn "Client was closed";
             exit(1);
         } else { die "Can't fork: $!"; }
     }
-	#close($server);
-	#die "\n Out here!\n";
 }
 
 sub read_data {
@@ -130,12 +130,15 @@ sub read_data {
     my $bytes_read = $socket->sysread($data, $size);
     
     if (not defined $bytes_read) {
-        die "Undefined data on the socket\n";
+        #die "Undefined data on the socket\n";
+	print "Undefined data on the socket\n";
+	return undef;
     }    
-    elsif ($bytes_read == 0) {           
-        print "The socket was closed\n";
-        return undef;
-    }
+    elsif( $bytes_read != $size) {
+		#die "Can't read to server\n";
+		print "Can't read to server\n";
+		return undef;
+	}
     print "Reading $bytes_read bytes from the socket... $data\n";
     return $data;
 }
@@ -143,5 +146,4 @@ sub read_data {
 
 
 1;
-
 
